@@ -552,6 +552,19 @@ with tab_analyse:
 
                 st.info("💡 **Why no feature chart for BERT?** BERT uses dense contextual vectors — there's no single 'important word' score. The whole sentence context matters simultaneously.", icon="ℹ️")
 
+        if "Fine-tuned BERT" in results and "Transformer" in results:
+            with st.expander("🟣 Fine-tuned vs Pre-trained Comparison", expanded=True):
+                st.markdown("See how fine-tuning on your dataset changed the model's confidence:")
+                c1, c2 = st.columns(2)
+                p_base = results['Transformer']['proba_pos']
+                p_fine = results['Fine-tuned BERT']['proba_pos']
+                c1.metric("DistilBERT (Pre-trained)", f"{p_base:.1%} Positive")
+                
+                delta = p_fine - p_base
+                # Streamlit arrow logic: Positive delta is green, negative is red. 
+                # If both are > 0.5 (positive class), higher is better.
+                c2.metric("DistilBERT (Fine-tuned)", f"{p_fine:.1%} Positive", delta=f"{delta:+.1%} shift")
+
     elif run_btn:
         st.warning("⚠️ Please type a sentence first.")
 
@@ -749,6 +762,37 @@ with tab_train:
         else:
             st.error("❌ Failed to load. Check your internet connection.")
 
+    st.markdown("#### 🟣 DistilBERT — Fine-tune on your data")
+    st.write("Train the transformer head specifically on your dataset. This takes time (~30+ sec per 100 samples on CPU).")
+    ft_epochs = st.slider("Epochs", 1, 3, 1)
+    if st.button("🚀 Fine-tune DistilBERT", type="primary", use_container_width=True):
+        if not dataset_ready:
+            st.error("⚠️ Please load a dataset first (Step 1).")
+        else:
+            loss_chart = st.empty()
+            ft_step_txt = st.empty()
+            
+            def ft_cb(msg, pct, extra):
+                ft_step_txt.markdown(f"**{msg}**")
+                if "losses" in extra and extra["losses"]:
+                    # plot live loss curve
+                    df_l = pd.DataFrame(extra["losses"])
+                    fig = px.line(df_l, x="step", y="loss", title="Training Loss (Live)", template="plotly_dark", height=250)
+                    loss_chart.plotly_chart(fig, use_container_width=True)
+            
+            with st.spinner(f"Fine-tuning for {ft_epochs} epoch(s)..."):
+                metrics = pl.finetune_distilbert(
+                    st.session_state["train_texts"], 
+                    st.session_state["train_labels"], 
+                    epochs=ft_epochs,
+                    progress_cb=ft_cb
+                )
+            
+            st.session_state.finetuned_ready = pl._finetuned_ready
+            st.session_state.ft_metrics = metrics
+            st.success(f"✅ Fine-tuning complete! Held-out Accuracy: **{metrics['accuracy']:.2%}**")
+            st.rerun()
+
 # ─────────────────────────────────────────────────────────────────────────────
 # TAB 3  ─  BATCH / CSV
 # ─────────────────────────────────────────────────────────────────────────────
@@ -787,6 +831,11 @@ with tab_batch:
                         entry.update({"bert_pred": r["label"],
                                        "bert_conf": f"{r['confidence']:.2%}",
                                        "bert_ms":   f"{r['time_ms']:.1f}"})
+                    if st.session_state.finetuned_ready:
+                        r = pl.predict_finetuned(txt)
+                        entry.update({"ft_pred": r["label"],
+                                       "ft_conf": f"{r['confidence']:.2%}",
+                                       "ft_ms":   f"{r['time_ms']:.1f}"})
                     if "label" in df_b.columns:
                         entry["true_label"] = df_b["label"].iloc[i]
                     rows.append(entry)
@@ -800,9 +849,9 @@ with tab_batch:
                 # accuracy
                 if "true_label" in df_out.columns:
                     st.markdown("#### 🎯 Accuracy vs Ground Truth")
-                    acols = st.columns(3)
+                    acols = st.columns(4)
                     for idx2, (pname, pcol) in enumerate([
-                        ("NLTK","nltk_pred"), ("spaCy","spacy_pred"), ("BERT","bert_pred")
+                        ("NLTK","nltk_pred"), ("spaCy","spacy_pred"), ("BERT","bert_pred"), ("FT BERT", "ft_pred")
                     ]):
                         if pcol in df_out.columns:
                             norm = lambda v: "Positive" if str(v).strip() in ("1","Positive") else "Negative"
@@ -830,8 +879,8 @@ with tab_compare:
         times = [results[n]["time_ms"]    for n in names]
         ppos  = [results[n]["proba_pos"]  for n in names]
         pneg  = [results[n]["proba_neg"]  for n in names]
-        CLRS  = {"NLTK": "#60a5fa", "spaCy": "#34d399", "Transformer": "#f472b6"}
-        colors = [CLRS[n] for n in names]
+        CLRS  = {"NLTK": "#60a5fa", "spaCy": "#34d399", "Transformer": "#f472b6", "Fine-tuned BERT": "#a855f7"}
+        colors = [CLRS.get(n, "#ffffff") for n in names]
 
         fig = make_subplots(rows=1, cols=3,
             subplot_titles=("Confidence", "Inference Time (ms)", "P(Positive) vs P(Negative)"))
@@ -938,15 +987,15 @@ with tab_about:
     st.divider()
     st.markdown("### ⚖️ Trade-off Summary")
     st.markdown("""
-| Aspect | NLTK | spaCy | DistilBERT |
-|--------|------|-------|-----------|
-| Accuracy (SST-2) | ~83% | ~84% | ~91% |
-| Speed (CPU) | ⚡⚡⚡ 2–8 ms | ⚡⚡ 4–12 ms | ⚡ 80–200 ms |
-| Negation handling | ❌ Weak | ❌ Weak | ✅ Strong |
-| Model size | ~few MB | ~few MB | ~270 MB |
-| Interpretability | ✅ High | ✅ High | ⚠️ Black-box |
-| Training speed | ✅ Fast | ✅ Fast | ❌ Needs GPU |
-| Custom training | ✅ Easy | ✅ Easy | ❌ Complex |
+| Aspect | NLTK | spaCy | DistilBERT | Fine-tuned BERT |
+|--------|------|-------|-----------|------------------|
+| Accuracy (SST-2) | ~83% | ~84% | ~91% | Local Accuracy |
+| Speed (CPU) | ⚡⚡⚡ 2–8 ms | ⚡⚡ 4–12 ms | ⚡ 80–200 ms | ⚡ 80–200 ms |
+| Negation handling | ❌ Weak | ❌ Weak | ✅ Strong | ✅ Strong |
+| Model size | ~few MB | ~few MB | ~270 MB | ~270 MB |
+| Interpretability | ✅ High | ✅ High | ⚠️ Black-box | ⚠️ Black-box |
+| Training speed | ✅ Fast | ✅ Fast | ❌ Needs GPU | ❌ Slow on CPU |
+| Custom training | ✅ Easy | ✅ Easy | ❌ Complex | ✅ Done via UI |
     """)
 
     st.divider()
