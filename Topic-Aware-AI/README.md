@@ -1,19 +1,19 @@
 # Topic-Aware AI Dashboard
 
-> **Advanced Hybrid NLP** — Gensim LDA + DistilBERT Transformers
-
-A full-stack, educational Streamlit dashboard (mirroring the UI/UX pattern of the Sentiment Analyser). It visualises how topic modelling and deep semantic context combine into a highly effective **Hybrid Vector Representation**.
+> **Advanced Hybrid NLP** — Gensim LDA + DistilBERT Transformers  
+> An educational masterclass platform that teaches complex AI concepts through an interactive live UI.
 
 ---
 
 ## 🎯 What This Project Does
 
-Builds an end-to-end system that captures BOTH:
-| Component | Tool | What It Captures |
-|-----------|------|-----------------|
-| **Topic Distributions** | LDA (Gensim) | Explainable structure (5 Dimensions) |
-| **Semantic Embeddings** | DistilBERT (Transformers) | Deep contextual meaning (768 Dimensions) |
-| **Hybrid Vector** | Concatenation | Both meaning + topics (773 Dimensions) |
+Builds an end-to-end hybrid AI system that captures BOTH:
+
+| Component | Tool | Output |
+|-----------|------|--------|
+| **Topic Discovery** | LDA (Gensim) | "This is 90% Sci-Fi, 10% Action" |
+| **Deep Semantic Meaning** | DistilBERT (Transformers) | 768 numbers representing context & tone |
+| **Hybrid Fusion** | L2-Norm + Concat | One super-list of 768+K numbers |
 
 ---
 
@@ -21,72 +21,87 @@ Builds an end-to-end system that captures BOTH:
 
 ```
 Topic-Aware-AI/
-├── app.py                  # 🖥️ Streamlit Dashboard (Live UI)
-├── pipelines.py            # ⚙️ All backend processing, modeling & search logic
-├── train_models.py         # 🏋️ Offline pipeline to build models & datasets
-├── requirements.txt        # 📦 Dependencies
-├── README.md               # 📖 Documentation
-├── FEATURES.md             # 📝 Technical features detail
-├── data/                   # 💾 Saved vectors (.npy) & raw data
-└── models/                 # 📂 Scikit-learn & Gensim (.pkl / .gensim) models
+├── app.py               🖥️  Streamlit Educational Dashboard (The main app)
+├── pipelines.py         ⚙️  All backend logic (data, models, search, train)
+├── train_models.py      🏋️  Offline terminal alternative (same as the UI builder)
+├── code_dump.py         📜  Master code reference file (code for every step)
+├── requirements.txt     📦  All dependencies
+├── README.md            📖  This file
+├── FEATURES.md          📝  Deep-dive feature documentation
+├── data/                💾  Saved vectors (.npy) & raw text data
+└── models/              📂  Saved model files (.gensim, .pkl)
 ```
 
 ---
 
-## 🚀 Quick Start
+## 🚀 Quick Start (2 Steps)
 
 ### 1. Install Dependencies
 ```bash
 pip install -r requirements.txt
 ```
 
-### 2. Run Offline Pipeline
-Generates the base models, vectorises 2,000 IMDB reviews, calculates UMAP projections, and stores everything in `data/` and `models/`.
+### 2. Launch Dashboard
 ```bash
-python train_models.py
+streamlit run app.py
 ```
-*(Takes ~5-10 minutes. Utilises CUDA if available.)*
 
-### 3. Launch Dashboard
+The dashboard includes a **Build Engine tab** that trains the whole system in-browser. No external commands needed!
+
+---
+
+## 📱 Dashboard Tabs
+
+| Tab | Icon | What You'll Learn |
+|-----|------|--------------------|
+| **The Theory** | 📖 | What LDA does, what BERT does, why we combine them, and the L2 Normalization problem |
+| **Build Engine** | ⚙️ | Build the AI live using IMDB, a built-in fast dataset, or your own CSV file |
+| **Step-by-Step** | 🔬 | Watch your sentence get turned into numbers in real-time with full explanations |
+| **Classify (A)** | 🏋️ | Train Logistic Regression / SVM / MLP on the hybrid features and compare scores |
+| **Visualise (B)** | 📉 | See a 2D Galaxy Map of all documents using UMAP |
+| **Search (C)** | 🔍 | Search by meaning (not exact words) using Cosine Similarity |
+
+---
+
+## ⚙️ Dataset Options
+
+| Option | Time | Best For |
+|--------|------|---------|
+| ⚡ Fast Built-In Dataset | ~30 seconds | Quick exploration, first-time testing |
+| 🌐 Full IMDB Download | ~3-10 min (80MB) | Production-quality experiments |
+| 📁 Custom CSV Upload | Depends on size | Any domain, any text column |
+
+> CSV must have `text` (string) and `label` (integer: 0 or 1) columns.
+
+---
+
+## Alternatively - Offline CLI Mode
+
 ```bash
+# Run the offline terminal pipeline instead of the UI
+python train_models.py
+
+# Then launch the dashboard
 streamlit run app.py
 ```
 
 ---
 
-## 📱 Dashboard Features
-
-### 🔬 1. Step-by-Step Pipeline
-Type any text and watch exactly how it is processed:
-1. **Gensim pre-processing** (stops removed) → BoW → 5-D Topic inference
-2. **DistilBERT encoding** → Mean Pooling → 768-D Context inference
-3. **Fusion** → L2-normed 773-D Hybrid Vector
-
-### 🏋️ 2. Train Classifier (Feature A)
-- Real-time training of `LogisticRegression`, `SVM`, or `MLP` on the 773-D hybrid features.
-- Directly compares Hybrid accuracy vs standard BERT-only accuracy.
-- Displays detailed classification reports.
-
-### 📉 3. Visualise & Explore (Feature B)
-- **UMAP/PCA Projections:** Interactive 2-D scatter plot of the semantic space, color-coded by Dominant Topic.
-- **Topic Interperting:** Word clouds/distributions for Gensim's learned topics.
-
-### 🔍 4. Search Engine (Feature C)
-- Enter complex, conceptual queries (e.g. *"A mind bending sci-fi about time travel"*).
-- Finds visually similar reviews using Cosine Similarity on the fused 773-D vectors.
-- Supports sentiment filtering (Positive/Negative only).
-
----
-
 ## 🔧 Technology Stack
-- **Dashboard:** Streamlit, Plotly
-- **Machine Learning:** Scikit-Learn, Gensim, Transformers (HuggingFace)
-- **Vectors:** NumPy (High-performance array storage)
-- **Visualisation:** UMAP-learn
+
+| Role | Tool |
+|------|------|
+| Dashboard | Streamlit, Plotly |
+| Topic Modelling | Gensim, LdaModel |
+| Transformers | HuggingFace, DistilBERT |
+| Classifiers | Scikit-Learn |
+| Dimensionality Reduction | UMAP-learn (PCA fallback) |
+| Storage | NumPy .npy arrays, JSON |
 
 ---
 
 ## 🧠 Why Hybrid?
-- **BERT alone** focuses heavily on sequence and local context. It might cluster reviews that *sound* structurally similar but are about completely different movies.
-- **LDA alone** groups by high-level semantic themes (e.g., *Comedy vs Action*) but lacks the nuance to detect subtle sentiment or contextual meaning (like sarcasm or double-negatives).
-- **Together**, the model understands that a review is *both* "a highly positive sentiment" (BERT) AND "about a sci-fi action movie" (LDA).
+
+- **BERT alone** can't tell you *what* a review is about. It understands *how* it's said.
+- **LDA alone** counts keywords. It can't understand sarcasm or context ("not terrible" → positive).
+- **Together**: The AI understands both **What the text is about** (LDA) and **How it says it** (BERT). No single model can do both.
