@@ -296,23 +296,32 @@ def _make_hybrid_steps(text: str) -> dict:
     bert_raw = _mean_pool(out.last_hidden_state, inputs["attention_mask"]).squeeze().numpy()
     bert_tokens = _tokenizer.convert_ids_to_tokens(inputs["input_ids"][0].tolist())
 
-    bert_norm = bert_raw  / (np.linalg.norm(bert_raw)  + 1e-9)
-    lda_norm  = lda_raw   / (np.linalg.norm(lda_raw)   + 1e-9)
+    bert_magnitude = float(np.linalg.norm(bert_raw))
+    lda_magnitude  = float(np.linalg.norm(lda_raw))
+
+    bert_norm = bert_raw  / (bert_magnitude  + 1e-9)
+    lda_norm  = lda_raw   / (lda_magnitude   + 1e-9)
     hybrid    = np.concatenate([bert_norm, lda_norm])
 
     return {
-        "raw":           text,
-        "all_tokens":    all_tokens,
-        "kept_tokens":   kept_tok,
-        "removed_tokens":removed_tok,
-        "bow":           bow[:10],       
-        "lda_dist":      lda_raw.tolist(),
-        "topic_words":   topic_words,
-        "dominant_topic":int(np.argmax(lda_raw)),
-        "bert_tokens":   bert_tokens,
-        "bert_dim":      len(bert_raw),
-        "hybrid_dim":    len(hybrid),
-        "hybrid":        hybrid,
+        "raw":             text,
+        "all_tokens":      all_tokens,
+        "kept_tokens":     kept_tok,
+        "removed_tokens":  removed_tok,
+        "bow":             bow[:10],
+        "lda_dist":        lda_raw.tolist(),
+        "lda_normed":      lda_norm.tolist(),
+        "topic_words":     topic_words,
+        "dominant_topic":  int(np.argmax(lda_raw)),
+        "bert_tokens":     bert_tokens,
+        "bert_raw_sample": bert_raw[:8].tolist(),       # first 8 raw BERT values
+        "bert_norm_sample":bert_norm[:8].tolist(),      # first 8 normalised BERT values
+        "bert_magnitude":  round(bert_magnitude, 4),
+        "lda_magnitude":   round(lda_magnitude, 4),
+        "bert_dim":        len(bert_raw),
+        "hybrid_dim":      len(hybrid),
+        "hybrid_sample":   hybrid[:6].tolist() + ["..."] + hybrid[-3:].tolist(),  # preview
+        "hybrid":          hybrid,
     }
 
 # ═══════════════════════════════════════════════════════════════════════════

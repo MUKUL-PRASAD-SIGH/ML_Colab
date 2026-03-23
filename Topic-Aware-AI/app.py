@@ -111,6 +111,22 @@ with st.sidebar:
     st.markdown(f"{status_dot(st.session_state.bert_ready)}  **Deep Reader** (Transformer)")
     st.markdown(f"{status_dot(st.session_state.corpus_ready)}  **Search Database**")
     st.markdown(f"{status_dot(st.session_state.clf_ready)}  **Trained AI Brain**")
+    
+    st.markdown("<br>", unsafe_allow_html=True)
+    c_auto, c_play = st.columns(2)
+    with c_auto:
+        if st.button("🪄 Auto Mode", type="primary", use_container_width=True, help="Watch it run by itself."):
+            st.session_state.auto_running = True
+            st.session_state.tut_mode = "auto"
+            st.session_state.demo_step = 100 # runs all at once
+            st.rerun()
+    with c_play:
+        if st.button("🎮 Play Mode", type="secondary", use_container_width=True, help="Click next step manually."):
+            st.session_state.auto_running = True
+            st.session_state.tut_mode = "manual"
+            st.session_state.demo_step = 1
+            st.rerun()
+            
     st.divider()
 
     st.markdown("#### 🎯 Core Concepts (Simplified)")
@@ -142,16 +158,171 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
+if st.session_state.get('auto_running', False):
+    import time
+    st.markdown("---")
+    tut_mode = st.session_state.get('tut_mode', 'auto')
+    step_val = st.session_state.get('demo_step', 1)
+    st.markdown(f"## 🪄 LIVE AUTOMATED DEMO ({tut_mode.upper()} MODE)")
+    
+    t_msg = st.empty()
+    t_sub = st.empty()
+    t_box = st.empty()
+    t_prog = st.progress(0)
+    
+    if st.button("🚪 Cancel Tutorial & Open Dashboard", type="secondary"):
+        st.session_state.auto_running = False
+        st.rerun()
+
+    def r_step(title, subtitle, detail, pct):
+        t_msg.markdown(f"<h3 style='color:#c084fc'>{title}</h3>", unsafe_allow_html=True)
+        t_sub.markdown(f"**{subtitle}**")
+        t_box.markdown(f"<div class='log-box' style='font-size:0.9rem'>{detail}</div>", unsafe_allow_html=True)
+        t_prog.progress(pct)
+        if tut_mode == "auto": time.sleep(2.0)
+
+    # State Machine Sequence
+    if step_val >= 1:
+        r_step("Step 1: Starting Engine Builder", "Injecting 200 Fast Reviews...", "- Grabbing positive/negative templates<br>- Formatting to Pandas...", 0.1)
+        if tut_mode == "manual" and step_val == 1:
+            if st.button("▶️ Next Step: Train Pipeline"):
+                st.session_state.demo_step = 2
+                st.rerun()
+            st.stop()
+
+    if step_val >= 2:
+        t_msg.markdown(f"<h3 style='color:#60a5fa'>Step 2: Training Pipeline Live</h3>", unsafe_allow_html=True)
+        t_sub.markdown("**Running Gensim & BERT exactly as a user would... (please wait a few seconds)**")
+        
+        cb_logs = []
+        def demo_cb(msg, pct):
+            cb_logs.append(msg)
+            t_box.markdown("<div class='log-box'>" + "<br>".join(cb_logs) + "</div>", unsafe_allow_html=True)
+            if tut_mode == "auto": t_prog.progress(0.1 + (pct * 0.4))
+            
+        if not st.session_state.get('lda_ready'):
+            pl.build_core_pipeline(n_samples=200, n_topics=3, ds_type="fast", progress_cb=demo_cb)
+            st.session_state.lda_ready  = pl.load_lda()
+            st.session_state.bert_ready = pl.load_bert()
+            st.session_state.corpus_ready = pl.load_corpus()
+        else:
+            r_step("Step 2: Training Pipeline Live", "Pipeline already built in memory! Skipping...", "Loaded Gensim, DistilBERT, and Corpus instantly.", 0.5)
+
+        if tut_mode == "manual" and step_val == 2:
+            if st.button("▶️ Next Step: Teach Classifier"):
+                st.session_state.demo_step = 3
+                st.rerun()
+            st.stop()
+
+    if step_val >= 3:
+        r_step("Step 3: Teaching the Classifier", "AI is learning to read the lists...", "- Fetching 768+3 feature list<br>- Training LogisticRegression...<br>- Saving models...", 0.6)
+        
+        ml_logs = []
+        def ml_cb(msg, pct):
+            ml_logs.append(msg)
+            t_box.markdown("<div class='log-box'>" + "<br>".join(ml_logs[-5:]) + "</div>", unsafe_allow_html=True)
+            if tut_mode == "auto": t_prog.progress(0.6 + (pct * 0.2))
+            
+        if not st.session_state.get('clf_ready'):
+            pl.train_classifier(model_type="LogisticRegression", progress_cb=ml_cb)
+            st.session_state.clf_ready = True
+        
+        if tut_mode == "manual" and step_val == 3:
+            if st.button("▶️ Next Step: Simulate User Typing"):
+                st.session_state.demo_step = 4
+                st.rerun()
+            st.stop()
+
+    if step_val >= 4:
+        r_step("Step 4: A Human Types a Sentence", "Simulating user input...", "> <i>'A thrilling psychological horror that kept me on the edge of my seat!'</i>", 0.7)
+        if tut_mode == "manual" and step_val == 4:
+            if st.button("▶️ Next Step: Extract Topics"):
+                st.session_state.demo_step = 5
+                st.rerun()
+            st.stop()
+
+    # Pre-compute words for remaining tasks
+    st.session_state.step_input = "A thrilling psychological horror that kept me on the edge of my seat!"
+    words = pl._make_hybrid_steps(st.session_state.step_input)
+    
+    if step_val >= 5:
+        lda_str = ", ".join([f"{x:.3f}" for x in words['lda_dist']])
+        lda_n_str = ", ".join([f"{x:.3f}" for x in words['lda_normed']])
+        r_step("Step 5: Gensim categorises the words", "Finding mathematical topics...", 
+                 f"<b>Gensim Distribution:</b> [{lda_str}]<br><b>Squashing Magnitude {words['lda_magnitude']} to 1.0:</b> [{lda_n_str}]", 0.8)
+        if tut_mode == "manual" and step_val == 5:
+            if st.button("▶️ Next Step: BERT Extraction"):
+                st.session_state.demo_step = 6
+                st.rerun()
+            st.stop()
+
+    if step_val >= 6:
+        bert_str = ", ".join([f"{x:.3f}" for x in words['bert_raw_sample'][:4]])
+        bert_n_str = ", ".join([f"{x:.3f}" for x in words['bert_norm_sample'][:4]])
+        r_step("Step 6: DistilBERT extracts meaning", "Generating 768 dimensions...", 
+                 f"<b>BERT Context Array:</b> [{bert_str}, ...]<br><b>Squashing massive magnitude {words['bert_magnitude']} to 1.0:</b> [{bert_n_str}, ...]", 0.85)
+        if tut_mode == "manual" and step_val == 6:
+            if st.button("▶️ Next Step: Hybrid Fusion"):
+                st.session_state.demo_step = 7
+                st.rerun()
+            st.stop()
+            
+    if step_val >= 7:
+        num_dims = words['hybrid_dim']
+        r_step("Step 7: The Final Hybrid Fusion", f"Gluing them into {num_dims} dimensions...", 
+                 f"<span style='color:#c084fc'>Final Array sent to brain:</span> [<span style='color:#60a5fa'>{lda_n_str}</span>, <span style='color:#f472b6'>{bert_n_str} ...</span>]", 0.9)
+        if tut_mode == "manual" and step_val == 7:
+            if st.button("▶️ Next Step: Final AI Verdict"):
+                st.session_state.demo_step = 8
+                st.rerun()
+            st.stop()
+
+    if step_val >= 8:
+        z_score = pl._classifier.decision_function([words['hybrid']])[0]
+        r_step("Step 8: Machine Learning Math (Dot Product)", "Calculating the 'Z-Score' constraint...", 
+                 f"<div style='border:1px solid rgba(255,255,255,0.2);padding:10px;border-radius:6px;font-size:0.9rem'><p>Inside the AI, Logistic Regression applies 771 learned 'weights' to our array.</p><code style='background:#030509;color:#a5b4fc;padding:6px;border-radius:4px'>(Val_1 × Weight_1) + (Val_2 × Weight_2) ... + Bias = Z_Score</code><br><br><b style='color:#fcd34d'>Calculated Raw Z-Score: {float(z_score):.3f}</b></div>", 0.95)
+        
+        if tut_mode == "manual" and step_val == 8:
+            if st.button("▶️ Next Step: Final AI Verdict"):
+                st.session_state.demo_step = 9
+                st.rerun()
+            st.stop()
+
+    if step_val >= 9:
+        pred = pl._classifier.predict([words['hybrid']])[0]
+        proba = pl._classifier.predict_proba([words['hybrid']])[0]
+        ans = "✅ POSITIVE" if pred == 1 else "❌ NEGATIVE"
+        color = "#4ade80" if pred == 1 else "#f87171"
+        
+        # Explain Sigmoid
+        r_step("🎉 FINAL AI VERDICT", "Squashing Z-Score to percentage using Sigmoid...", 
+                 f"<div style='border:2px solid {color};padding:15px;border-radius:8px;'><span style='color:#a5b4fc'>The Sigmoid function squashed the Z-Score into exact probabilities:<br>Negative = {(proba[0]*100):.1f}%, Positive = {(proba[1]*100):.1f}%</span><br><br><b style='color:{color};font-size:1.8rem'>VERDICT: {ans}</b></div>", 1.0)
+                 
+        if tut_mode == "manual":
+            st.balloons()
+            if st.button("🚪 Done! Open Dashboard", type="primary"):
+                st.session_state.auto_running = False
+                st.rerun()
+        else:
+            st.balloons()
+            if st.button("🚪 Close Auto-Run & Open Dashboard", type="primary"):
+                st.session_state.auto_running = False
+                st.rerun()
+
+    st.stop() # STOP RENDER SO THE TABS DON'T SHOW DURING TUTORIAL!
+
+
+# ═════════════════════════════════════════════════════════════════════════════
 # ═════════════════════════════════════════════════════════════════════════════
 # TABS
 # ═════════════════════════════════════════════════════════════════════════════
 tab_theory, tab_build, tab_step, tab_train, tab_vis, tab_search = st.tabs([
-    "📖 The Theory (Simple)",
-    "⚙️ Build Engine",
-    "🔬 Step-by-Step",
-    "🏋️ Classify (A)",
-    "📉 Visualise (B)",
-    "🔍 Search (C)",
+    "📖 1️⃣ Masterclass Theory",
+    "⚙️ 2️⃣ Build The Engine",
+    "🔬 3️⃣ Live Sentence Test",
+    "🏋️ 4️⃣ Train Classifier",
+    "📉 5️⃣ 2D Galaxy Map",
+    "🔍 6️⃣ Smart Semantic Search",
 ])
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -160,6 +331,15 @@ tab_theory, tab_build, tab_step, tab_train, tab_vis, tab_search = st.tabs([
 with tab_theory:
     st.markdown("## 🧠 Welcome to the Masterclass")
     st.markdown("Don't worry if you aren't a math genius! Let's break down exactly what this AI is doing in plain English.")
+
+    with st.expander("💡 Why are we using two different AIs?", expanded=True):
+        st.markdown("""
+        <div style='color:#94a3b8;font-size:0.95rem;line-height:1.6'>
+        Standard AI (like plain BERT) is great at understanding context, but terrible at telling you exactly <i>why</i> it made a decision. It's a "Black Box".<br>
+        Standard Statistical Models (like Gensim LDA) are great at giving explicit reasons ("Here is the topic list"), but they are terrible at understanding context and sarcasm.<br><br>
+        <b>By fusing them together, we get the deep intelligence of a Neural Network PLUS the logical explainability of standard statistics!</b>
+        </div>
+        """, unsafe_allow_html=True)
 
     col1, col2 = st.columns(2)
     with col1:
@@ -214,6 +394,10 @@ with tab_theory:
 # ─────────────────────────────────────────────────────────────────────────────
 with tab_build:
     st.markdown("### ⚙️ Build The Core Engine")
+    
+    with st.expander("💡 Theory: Why are we generating all this data? (Click to read)", expanded=False):
+        st.info("Before we can search or classify sentences, the AI Engine needs to build a 'Dictionary' of topics across 1000s of actual documents, and we need HuggingFace to download the DistilBERT neural weights to your RAM. This step initializes everything!")
+
     st.markdown("Choose a dataset below. If this is your first time, use the **Fast Built-In Dataset** to see how it works instantly!")
     
     # Selection of Dataset
@@ -303,6 +487,10 @@ with tab_build:
 # ─────────────────────────────────────────────────────────────────────────────
 with tab_step:
     st.markdown("### 🔬 Test the AI Pipeline Live")
+    
+    with st.expander("💡 Theory: How does it translate English into Numbers? (Click to read)", expanded=False):
+        st.info("Computers can't read English. So, we pass your sentence through two pipelines simultaneously. Gensim strips out useless words and counts keywords to guess a topic percentage. BERT reads every word in context to generate a 768-number 'meaning' vector. Then we normalize and combine them!")
+
     st.markdown("Write a sentence below and watch exactly how the computer turns your English words into numbers.")
     
     col_inp, col_ex = st.columns([3, 1])
@@ -411,14 +599,66 @@ with tab_step:
             # Concatenation
             with st.expander("🧬 Phase 3: Merging them together", expanded=True):
                 st.markdown("""
-                Both the Gensim List and the BERT List are "Normalised" (squashed into a perfect circle shape so they are identical sizes), and then glued side-by-side to make the final **Hybrid Array**.
+                Both the Gensim List and the BERT List are **Normalised** (squashed so their total length equals exactly 1.0) and then glued side-by-side to make the final **Hybrid Array**.
                 """)
+                
+                cA, cB = st.columns(2)
+                with cA:
+                    st.markdown(f"**📘 Gensim (Before / After)**")
+                    st.markdown(f"<code style='color:#a5b4fc;font-size:0.75rem;background:#030509'>Raw Scale:    {steps['lda_magnitude']} <br>Squashed to:  1.0</code>", unsafe_allow_html=True)
+                    st.markdown(f"<div style='background:#0f1420;border:1px solid #1e2a40;padding:8px;border-radius:6px;font-family:monospace;font-size:0.7rem;color:#60a5fa;'>{steps['lda_dist']}<br><br>{steps['lda_normed']}</div>", unsafe_allow_html=True)
+                with cB:
+                    st.markdown(f"**📕 BERT (Before / After)**")
+                    st.markdown(f"<code style='color:#f9a8d4;font-size:0.75rem;background:#030509'>Raw Scale:    {steps['bert_magnitude']} <br>Squashed to:  1.0</code>", unsafe_allow_html=True)
+                    st.markdown(f"<div style='background:#0f1420;border:1px solid #1e2a40;padding:8px;border-radius:6px;font-family:monospace;font-size:0.7rem;color:#f472b6;'>[{', '.join([f'{x:.3f}' for x in steps['bert_raw_sample']])}, ...]<br><br>[{', '.join([f'{x:.3f}' for x in steps['bert_norm_sample']])}, ...]</div>", unsafe_allow_html=True)
+                    
+                st.markdown("**🧬 Final Hybrid Array (Glued together)**")
+                st.markdown(f"<div style='background:rgba(192,132,252,0.1);border:1px solid rgba(192,132,252,0.3);padding:10px;border-radius:6px;font-family:monospace;font-size:0.75rem;color:#c084fc;'>[{', '.join([str(round(float(x),3)) if isinstance(x, (int, float)) else str(x) for x in steps['hybrid_sample']])}]</div>", unsafe_allow_html=True)
+
+            # Final Output Prediction
+            with st.expander("🤖 Phase 4: AI Verdict", expanded=True):
+                if st.session_state.clf_ready and pl._classifier is not None:
+                    # Make prediction using the exact hybrid Array we just calculated!
+                    pred  = pl._classifier.predict([steps['hybrid']])[0]
+                    proba = pl._classifier.predict_proba([steps['hybrid']])[0]
+                    z_score = float(pl._classifier.decision_function([steps['hybrid']])[0])
+                    max_p = max(proba)
+                    
+                    if pred == 1:
+                        lbl_txt, col, icon = "POSITIVE", "#4ade80", "✅"
+                    elif pred == 0:
+                        lbl_txt, col, icon = "NEGATIVE", "#f87171", "❌"
+                    else:
+                        lbl_txt, col, icon = str(pred).upper(), "#60a5fa", "🏷️"
+                        
+                    st.markdown(f"""
+                    <div style='background:#0f1420; border:1px solid #1e2a40; padding:1.2rem; border-radius:10px; margin-bottom:1rem;'>
+                        <div style='font-size:0.9rem;color:#94a3b8;font-weight:600;margin-bottom:0.5rem'>STEP A: The Dot Product</div>
+                        <p style='color:#cbd5e1;font-size:0.85rem'>
+                        Inside the AI, Logistic Regression applies roughly 771 learned 'weights' to our generated Hybrid array. It mathematically multiplies each dimension by its weight and adds them all together to form a raw sum.
+                        </p>
+                        <code style='color:#fcd34d;background:#030509'>Calculated Raw Z-Score: {z_score:.3f}</code>
+                    </div>
+                    
+                    <div style='background:rgba({int(col[1:3],16)},{int(col[3:5],16)},{int(col[5:7],16)},0.1); border:2px solid {col}; padding:1.5rem; text-align:center; border-radius:12px;'>
+                        <div style='font-size:1rem;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.5rem'>STEP B: Final Decision (Sigmoid)</div>
+                        <p style='color:#a5b4fc;font-size:0.85rem;margin-top:0'>The raw score is squashed to a percentage rating.</p>
+                        <h1 style='color:{col};margin:0;font-size:2.5rem'>{icon} {lbl_txt}</h1>
+                        <div style='color:#a5b4fc;font-family:"JetBrains Mono",monospace;margin-top:0.5rem;font-size:1rem'>Confidence: {max_p*100:.1f}%</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                else:
+                    st.info("ℹ️ The Hybrid AI hasn't learned to classify yet! Head over to the **🏋️ Classify (A)** tab to literally teach the AI how to interpret the Hybrid Array. Then come back here!")
 
 # ─────────────────────────────────────────────────────────────────────────────
 # TAB 4 ─ TRAIN CLASSIFIER (A)
 # ─────────────────────────────────────────────────────────────────────────────
 with tab_train:
     st.markdown("### 🏋️ Train Downstream Classifier")
+    
+    with st.expander("💡 Theory: Why are we training a Classifier? (Click to read)", expanded=False):
+        st.info("The Gensim+BERT pipeline just gave us a big list of numbers for each review. But the computer still doesn't know what represents 'Positive' or 'Negative'. By feeding these numbers into a simple Logistic Regression model (with the matching labels), the model learns which numbers correspond to which sentiment. This gives us our final decision-maker AI!")
+
     st.markdown("We can now feed our ultimate merged lists into a basic AI (like a Logistic Regression) and watch it get amazing scores!")
     
     col1, col2 = st.columns([1, 2])
@@ -480,6 +720,9 @@ with tab_train:
 with tab_vis:
     st.markdown("### 📉 2D Galaxy Map (UMAP)")
     
+    with st.expander("💡 Theory: How can we see 768 dimensions in 2D? (Click to read)", expanded=False):
+        st.info("We naturally can only see in 3 dimensions. So how do we graph a list of 768 numbers? UMAP is a mathematical technique that calculates distance between every single point in the 768D space, and then slowly builds a flat 2D map that preserves those relative distances. If two reviews are close in 768D, they will be close on this 2D map!")
+
     v1, v2 = st.tabs(["🗺️ Plot Text in 2D Space", "📚 View Learned Topics"])
     
     with v1:
@@ -535,6 +778,10 @@ with tab_vis:
 # ─────────────────────────────────────────────────────────────────────────────
 with tab_search:
     st.markdown("### 🔍 The Smart Search Engine")
+    
+    with st.expander("💡 Theory: How can math find 'similar meaning'? (Click to read)", expanded=False):
+        st.info("Because we converted all the sentences into a geometric coordinate (a 768-number array), we can just treat them like points in space! When you type a search query, we convert YOUR text into a geometry point, and then calculate the **Cosine Angle** between your point and all 1000 database points. The closest angle means the closest context, even if they don't share any of the same words!")
+        
     st.markdown("""
     Normal search bars only look for exact matching words.  
     This search bar calculates the **Cosine Angle** between your query's number-list and the number-lists of every document in the database, allowing you to search by *vibe* and *concept*.
