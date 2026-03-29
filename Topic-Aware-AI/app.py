@@ -16,53 +16,9 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# ─── CSS (Hotter Educational UI) ──────────────────────────────────────────────
+# ─── CSS (Obsidian Masterclass Design System) ────────────────────────────────
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap');
-
-html, body, [class*="css"]       { font-family:'Inter',sans-serif; }
-.stApp                           { background: #07090e; color:#e2e8f0; }
-section[data-testid="stSidebar"] { background:#0a0d14; border-right:1px solid #1e2a40; }
-
-/* ── cards ── */
-.card       { background:rgba(255,255,255,.02); border:1px solid rgba(99,102,241,.15);
-              border-radius:14px; padding:1.2rem 1.4rem; margin-bottom:.9rem;
-              backdrop-filter:blur(8px); transition:0.3s; }
-.card:hover { background:rgba(255,255,255,.04); border-color:rgba(99,102,241,.4); box-shadow:0 0 35px rgba(99,102,241,.1); transform:translateY(-2px); }
-.card-blue  { border-left:4px solid #60a5fa; }
-.card-green { border-left:4px solid #34d399; }
-.card-pink  { border-left:4px solid #f472b6; }
-.card-yellow{ border-left:4px solid #fbbf24; }
-.card-hybrid{ border-left:4px solid #c084fc; background:rgba(192,132,252,0.03); }
-
-/* ── theory box ── */
-.theory-box { background:linear-gradient(145deg, #111827, #0f1420); border:1px solid #1f2937;
-              border-radius:12px; padding:1.5rem; margin-bottom:1rem; border-left:4px solid #fcd34d; }
-.theory-title { color:#fcd34d; font-weight:800; font-size:1.1rem; margin-bottom:0.5rem; text-transform:uppercase; letter-spacing:0.05em; }
-
-/* ── step pipeline ── */
-.step-box   { background:#0b0f19; border:1px solid #1f2937; border-radius:10px;
-              padding:.9rem 1.1rem; margin:.4rem 0; font-size:.88rem; box-shadow:inset 0 0 15px rgba(0,0,0,0.5); }
-.step-title { font-size:.72rem; font-weight:700; letter-spacing:.1em;
-              text-transform:uppercase; color:#818cf8; margin-bottom:.35rem; }
-.step-number{ display:inline-block; background:linear-gradient(135deg,#6366f1,#8b5cf6); color:#fff; border-radius:50%;
-              width:22px; height:22px; text-align:center; line-height:22px;
-              font-size:.75rem; font-weight:700; margin-right:.5rem; box-shadow:0 0 10px rgba(99,102,241,0.5); }
-.arrow      { text-align:center; color:#4f46e5; font-size:1.3rem; margin:.05rem 0; opacity:0.8; }
-
-/* ── token pills ── */
-.token      { display:inline-block; padding:.18rem .55rem; border-radius:6px;
-              font-size:.8rem; font-family:'JetBrains Mono',monospace;
-              margin:.12rem .1rem; font-weight:500; }
-.tok-keep   { background:rgba(52,211,153,.18); color:#34d399; border:1px solid rgba(52,211,153,.3); }
-.tok-stop   { background:rgba(248,113,113,.12); color:#f87171;
-              border:1px solid rgba(248,113,113,.25); text-decoration:line-through; }
-.tok-bert   { background:rgba(244,114,182,.15); color:#f9a8d4; border:1px solid rgba(244,114,182,.3); }
-
-/* ── buttons & inputs ── */
-.stTextArea textarea, .stTextInput input {
-    background:rgba(255,255,255,.03)!important;
     border:1px solid rgba(99,102,241,.3)!important;
     border-radius:10px!important; color:#f1f5f9!important; }
 .stButton>button {
@@ -107,7 +63,7 @@ with st.sidebar:
 """, unsafe_allow_html=True)
 
     st.markdown("#### Database Status")
-    st.markdown(f"{status_dot(st.session_state.lda_ready)}  **Topic Finder** (Gensim)")
+    st.markdown(f"{status_dot(st.session_state.lda_ready)}  **Topic Finder** (NMF)")
     st.markdown(f"{status_dot(st.session_state.bert_ready)}  **Deep Reader** (Transformer)")
     st.markdown(f"{status_dot(st.session_state.corpus_ready)}  **Search Database**")
     st.markdown(f"{status_dot(st.session_state.clf_ready)}  **Trained AI Brain**")
@@ -134,7 +90,7 @@ with st.sidebar:
 <div style='font-size:0.85rem;color:#94a3b8;line-height:1.6'>
 <b style='color:#60a5fa'>1. What is a Vector?</b><br>Just a list of numbers! AI converts words into numbers so it can do math on them.<br><br>
 <b style='color:#f472b6'>2. What does BERT do?</b><br>It reads sentences and turns the "vibe" and "context" into a list of 768 numbers.<br><br>
-<b style='color:#c084fc'>3. What does Gensim do?</b><br>It figures out what topics you're talking about (e.g. Comedy vs Horror) and gives you a tiny list of numbers showing the percentages.
+<b style='color:#c084fc'>3. What does the Topic Model (NMF) do?</b><br>It figures out what topics you're talking about (e.g. Comedy vs Horror) and gives you a tiny list of numbers showing the percentages.
 </div>
 """, unsafe_allow_html=True)
 
