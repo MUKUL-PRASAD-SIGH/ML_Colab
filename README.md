@@ -12,7 +12,7 @@
     W O R K B E N C H
 ```
 
-# 🧪 ML Workbench
+# 🧪 ML Workbench 
 
 ### *A growing collection of hands-on Machine Learning & AI mini-projects — built to learn, built to share.*
 
